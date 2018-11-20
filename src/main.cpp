@@ -43,6 +43,8 @@
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/CameraInfo.h>
 #include <geometry_msgs/PoseStamped.h>
+#include <image_transport/subscriber_filter.h>
+#include <message_filters/sync_policies/approximate_time.h>
 #include "cv_bridge/cv_bridge.h"
 
 
@@ -137,31 +139,31 @@ FullSystem* fullSystem = 0;
 Undistort* undistorter = 0;
 int frameID = 0;
 
-void vidCb(const sensor_msgs::ImageConstPtr img)
+void vidCb(const sensor_msgs::ImageConstPtr img_left, const sensor_msgs::ImageConstPtr img_right)
 {
-	cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(img, sensor_msgs::image_encodings::MONO8);
-	assert(cv_ptr->image.type() == CV_8U);
-	assert(cv_ptr->image.channels() == 1);
+	// cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(img, sensor_msgs::image_encodings::MONO8);
+	// assert(cv_ptr->image.type() == CV_8U);
+	// assert(cv_ptr->image.channels() == 1);
 
 
-	if(setting_fullResetRequested)
-	{
-		std::vector<IOWrap::Output3DWrapper*> wraps = fullSystem->outputWrapper;
-		delete fullSystem;
-		for(IOWrap::Output3DWrapper* ow : wraps) ow->reset();
-		fullSystem = new FullSystem();
-		fullSystem->linearizeOperation=false;
-		fullSystem->outputWrapper = wraps;
-	    if(undistorter->photometricUndist != 0)
-	    	fullSystem->setGammaFunction(undistorter->photometricUndist->getG());
-		setting_fullResetRequested=false;
-	}
+	// if(setting_fullResetRequested)
+	// {
+	// 	std::vector<IOWrap::Output3DWrapper*> wraps = fullSystem->outputWrapper;
+	// 	delete fullSystem;
+	// 	for(IOWrap::Output3DWrapper* ow : wraps) ow->reset();
+	// 	fullSystem = new FullSystem();
+	// 	fullSystem->linearizeOperation=false;
+	// 	fullSystem->outputWrapper = wraps;
+	//     if(undistorter->photometricUndist != 0)
+	//     	fullSystem->setGammaFunction(undistorter->photometricUndist->getG());
+	// 	setting_fullResetRequested=false;
+	// }
 
-	MinimalImageB minImg((int)cv_ptr->image.cols, (int)cv_ptr->image.rows,(unsigned char*)cv_ptr->image.data);
-	ImageAndExposure* undistImg = undistorter->undistort<unsigned char>(&minImg, 1,0, 1.0f);
-	fullSystem->addActiveFrame(undistImg, frameID);
-	frameID++;
-	delete undistImg;
+	// MinimalImageB minImg((int)cv_ptr->image.cols, (int)cv_ptr->image.rows,(unsigned char*)cv_ptr->image.data);
+	// ImageAndExposure* undistImg = undistorter->undistort<unsigned char>(&minImg, 1,0, 1.0f);
+	// fullSystem->addActiveFrame(undistImg, frameID);
+	// frameID++;
+	// delete undistImg;
 
 }
 
@@ -221,9 +223,22 @@ int main( int argc, char** argv )
     	fullSystem->setGammaFunction(undistorter->photometricUndist->getG());
 
     ros::NodeHandle nh;
-    ros::Subscriber imgSub = nh.subscribe("image", 1, &vidCb);
+	image_transport::SubscriberFilter left_sub, right_sub;
+	image_transport::ImageTransport it(nh);
+	left_sub.subscribe(it, "left_topic", 1/* , "raw" */);
+	right_sub.subscribe(it, "right_topic", 1/* , "raw" */);
 
-    ros::spin();
+	typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image> ApproximatePolicy;
+	typedef message_filters::Synchronizer<ApproximatePolicy> ApproximateSync;
+	// typedef message_filters::SimpleFilter<ApproximatePolicy> ApproximateSync;
+	boost::shared_ptr<ApproximateSync> approximate_sync;
+
+	approximate_sync.reset(new ApproximateSync(ApproximatePolicy(10 /* queue_size */), left_sub, right_sub));
+	approximate_sync->registerCallback(boost::bind(vidCb, _1, _2));
+
+	// ros::Subscriber imgSub = nh.subscribe("image", 1, &vidCb);
+
+	ros::spin();
 
     for(IOWrap::Output3DWrapper* ow : fullSystem->outputWrapper)
     {
