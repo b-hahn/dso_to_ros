@@ -36,6 +36,7 @@
 #include "util/Undistort.h"
 #include "IOWrapper/Pangolin/PangolinDSOViewer.h"
 #include "IOWrapper/OutputWrapper/SampleOutputWrapper.h"
+#include "IOWrapper/ImageDisplay.h"
 
 
 #include <ros/ros.h>
@@ -46,6 +47,7 @@
 #include <image_transport/subscriber_filter.h>
 #include <message_filters/sync_policies/approximate_time.h>
 #include "cv_bridge/cv_bridge.h"
+#include <opencv/cv.h>
 
 
 std::string calib = "";
@@ -141,29 +143,74 @@ int frameID = 0;
 
 void vidCb(const sensor_msgs::ImageConstPtr img_left, const sensor_msgs::ImageConstPtr img_right)
 {
-	// cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(img, sensor_msgs::image_encodings::MONO8);
-	// assert(cv_ptr->image.type() == CV_8U);
-	// assert(cv_ptr->image.channels() == 1);
+	ROS_WARN("Callback begin...");
+	cv_bridge::CvImagePtr cv_ptr_left = cv_bridge::toCvCopy(img_left, sensor_msgs::image_encodings::MONO8);
+	cv_bridge::CvImagePtr cv_ptr_right = cv_bridge::toCvCopy(img_right, sensor_msgs::image_encodings::MONO8);
+	cv::Rect ROI(0, 0, 1242, 375);
+	// cv::Rect ROI(5,5, 1232, 368);
+	cv_ptr_left->image = cv_ptr_left->image(ROI);
+	cv_ptr_right->image = cv_ptr_right->image(ROI);
+	// cv::imshow("sds", cv_ptr_left->image);
+	// cv::waitKey(1000);
+	assert(cv_ptr_left->image.type() == CV_8U);
+	assert(cv_ptr_left->image.channels() == 1);
+	assert(cv_ptr_right->image.type() == CV_8U);
+	assert(cv_ptr_right->image.channels() == 1);
+	// TODO: need to add cropping here. Not sure if makeOptimalK_crop() is the right function, though. 
+
+	printf("setting_fullResetRequested: %d\n", setting_fullResetRequested);
+	if(setting_fullResetRequested)
+	{
+		std::vector<IOWrap::Output3DWrapper*> wraps = fullSystem->outputWrapper;
+		delete fullSystem;
+		for(IOWrap::Output3DWrapper* ow : wraps) ow->reset();
+		fullSystem = new FullSystem();
+		fullSystem->linearizeOperation=false;
+		fullSystem->outputWrapper = wraps;
+	    if(undistorter->photometricUndist != 0)
+	    	fullSystem->setGammaFunction(undistorter->photometricUndist->getG());
+		setting_fullResetRequested=false;
+	}
+
+	printf("cols: %d, rows: %d\n", (int)cv_ptr_left->image.cols, (int)cv_ptr_left->image.rows);
+	// MinimalImageB minImg_left((1232, 374,(unsigned char*)cv_ptr_left->image.data);
+	// MinimalImageB minImg_right(1232, 374,(unsigned char*)cv_ptr_right->image.data);
+	MinimalImageB minImg_left((int)cv_ptr_left->image.cols, (int)cv_ptr_left->image.rows,(unsigned char*)cv_ptr_left->image.data);
+	MinimalImageB minImg_right((int)cv_ptr_right->image.cols, (int)cv_ptr_right->image.rows,(unsigned char*)cv_ptr_right->image.data);
+	ImageAndExposure* undistImg_left = undistorter->undistort<unsigned char>(&minImg_left/* , 1,0, 1.0f */);
+	ImageAndExposure* undistImg_right = undistorter->undistort<unsigned char>(&minImg_right/* , 1,0, 1.0f */);
+        // MinimalImageB undist_left((int)cv_ptr_left->image.cols, (int)cv_ptr_left->image.rows, (unsigned char*)undistImg_left->image); 
+		// int cropped_w = 1232; int cropped_h = 374;
+        int w = undistImg_left->w;
+        int h = undistImg_left->h;
+        printf("w: %d, h: %d\n", w, h);
+        MinimalImageB3* internalVideoImg = new MinimalImageB3(w, h);
+        // MinimalImageB3* internalVideoImg_Right = new MinimalImageB3(w,h);
+        for (int i = 0; i < w; ++i) {
+          for (int j = 0; j < h; ++j) {
+            // internalVideoImg->data[i * h + j][0] = internalVideoImg->data[i * h + j][1] =
+            //     internalVideoImg->data[i * h + j][2] =
+            //         undistImg_left->image[i * h + j] * 0.8 > 255.0f ? 255.0 : undistImg_left->image[i * h + j] * 0.8;
+            internalVideoImg->data[i * h + j][0] = internalVideoImg->data[i * h + j][1] =
+                internalVideoImg->data[i * h + j][2] =
+                    undistImg_right->image[i * h + j] * 0.8 > 255.0f ? 255.0 : undistImg_right->image[i * h + j] * 0.8;
+          }
+        }
+        IOWrap::displayImage("right cam", internalVideoImg);
+	IOWrap::waitKey(10);
 
 
-	// if(setting_fullResetRequested)
-	// {
-	// 	std::vector<IOWrap::Output3DWrapper*> wraps = fullSystem->outputWrapper;
-	// 	delete fullSystem;
-	// 	for(IOWrap::Output3DWrapper* ow : wraps) ow->reset();
-	// 	fullSystem = new FullSystem();
-	// 	fullSystem->linearizeOperation=false;
-	// 	fullSystem->outputWrapper = wraps;
-	//     if(undistorter->photometricUndist != 0)
-	//     	fullSystem->setGammaFunction(undistorter->photometricUndist->getG());
-	// 	setting_fullResetRequested=false;
-	// }
+	// float* left = undistImg_left->image;
+	// cv::Mat cvimg_left((int)cv_ptr_left->image.rows, (int)cv_ptr_left->image.cols, CV_8U, (unsigned char*)left);
+	// cv::imshow("left image", cvimg_left);
+	// cv::imwrite("left_cam.png", cvimg_left);
+	// cv::waitkey(0);
 
-	// MinimalImageB minImg((int)cv_ptr->image.cols, (int)cv_ptr->image.rows,(unsigned char*)cv_ptr->image.data);
-	// ImageAndExposure* undistImg = undistorter->undistort<unsigned char>(&minImg, 1,0, 1.0f);
-	// fullSystem->addActiveFrame(undistImg, frameID);
-	// frameID++;
-	// delete undistImg;
+	fullSystem->addActiveFrame(undistImg_left, undistImg_right, frameID);
+	frameID++;
+	delete undistImg_left;
+	delete undistImg_right;
+	ROS_WARN("Callback end!\n");
 
 }
 
@@ -177,7 +224,10 @@ int main( int argc, char** argv )
 
 
 
-	for(int i=1; i<argc;i++) parseArgument(argv[i]);
+	for(int i=1; i<argc;i++) {
+		printf("reading arg %s\n", argv[i]);
+		parseArgument(argv[i]);
+	}
 
 
 	setting_desiredImmatureDensity = 1000;
@@ -190,8 +240,8 @@ int main( int argc, char** argv )
 	setting_kfGlobalWeight = 1.3;
 
 
-	printf("MODE WITH CALIBRATION, but without exposure times!\n");
-	setting_photometricCalibration = 2;
+	// printf("MODE WITH CALIBRATION, but without exposure times!\n");
+	setting_photometricCalibration = 0;
 	setting_affineOptModeA = 0;
 	setting_affineOptModeB = 0;
 
@@ -199,13 +249,14 @@ int main( int argc, char** argv )
 
     undistorter = Undistort::getUndistorterForFile(calib, gammaFile, vignetteFile);
 
+	printf("gloabl calib size: %d, %d\n",(int)undistorter->getSize()[0], (int)undistorter->getSize()[1]);
     setGlobalCalib(
             (int)undistorter->getSize()[0],
             (int)undistorter->getSize()[1],
             undistorter->getK().cast<float>());
-
-
-    fullSystem = new FullSystem();
+	baseline = undistorter->getBl();
+    
+	fullSystem = new FullSystem();
     fullSystem->linearizeOperation=false;
 
 
@@ -219,14 +270,17 @@ int main( int argc, char** argv )
         fullSystem->outputWrapper.push_back(new IOWrap::SampleOutputWrapper());
 
 
-    if(undistorter->photometricUndist != 0)
+    if(undistorter->photometricUndist != 0) {
+		printf("Using setGammaFunction!!\n");
     	fullSystem->setGammaFunction(undistorter->photometricUndist->getG());
-
+	} else {
+		printf("Not using setGammaFunction!!\n");
+	}
     ros::NodeHandle nh;
 	image_transport::SubscriberFilter left_sub, right_sub;
 	image_transport::ImageTransport it(nh);
-	left_sub.subscribe(it, "left_topic", 1/* , "raw" */);
-	right_sub.subscribe(it, "right_topic", 1/* , "raw" */);
+	left_sub.subscribe(it, "cam02/image_raw", 1/* , "raw" */);
+	right_sub.subscribe(it, "cam03/image_raw", 1/* , "raw" */);
 
 	typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image> ApproximatePolicy;
 	typedef message_filters::Synchronizer<ApproximatePolicy> ApproximateSync;
