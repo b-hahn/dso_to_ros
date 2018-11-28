@@ -8,6 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
   cv_bridge
   image_transport
   message_filters
+  pcl_catkin
 )
 
 set(DSO_PATH $ENV{DSO_PATH})
@@ -34,6 +35,7 @@ catkin_package(
     cv_bridge
     image_transport
     message_filters
+    pcl_catkin
 )
 
 ###########
@@ -46,6 +48,7 @@ set(CMAKE_CXX_FLAGS
 
 include_directories(
   ${PROJECT_SOURCE_DIR}/src
+  ${PROJECT_SOURCE_DIR}/include
   ${DSO_PATH}/src
   ${DSO_PATH}/thirdparty/Sophus
   ${Pangolin_INCLUDE_DIRS}

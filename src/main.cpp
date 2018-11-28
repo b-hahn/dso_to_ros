@@ -37,6 +37,7 @@
 #include "IOWrapper/Pangolin/PangolinDSOViewer.h"
 #include "IOWrapper/OutputWrapper/SampleOutputWrapper.h"
 #include "IOWrapper/ImageDisplay.h"
+#include "ROSOutputWrapper.h"
 
 
 #include <ros/ros.h>
@@ -146,17 +147,13 @@ void vidCb(const sensor_msgs::ImageConstPtr img_left, const sensor_msgs::ImageCo
 	ROS_WARN("Callback begin...");
 	cv_bridge::CvImagePtr cv_ptr_left = cv_bridge::toCvCopy(img_left, sensor_msgs::image_encodings::MONO8);
 	cv_bridge::CvImagePtr cv_ptr_right = cv_bridge::toCvCopy(img_right, sensor_msgs::image_encodings::MONO8);
-	cv::Rect ROI(0, 0, 1242, 375);
-	// cv::Rect ROI(5,5, 1232, 368);
+	cv::Rect ROI(0, 0, 1242, 375);  // TODO: remove if unnecessary
 	cv_ptr_left->image = cv_ptr_left->image(ROI);
 	cv_ptr_right->image = cv_ptr_right->image(ROI);
-	// cv::imshow("sds", cv_ptr_left->image);
-	// cv::waitKey(1000);
 	assert(cv_ptr_left->image.type() == CV_8U);
 	assert(cv_ptr_left->image.channels() == 1);
 	assert(cv_ptr_right->image.type() == CV_8U);
 	assert(cv_ptr_right->image.channels() == 1);
-	// TODO: need to add cropping here. Not sure if makeOptimalK_crop() is the right function, though. 
 
 	printf("setting_fullResetRequested: %d\n", setting_fullResetRequested);
 	if(setting_fullResetRequested)
@@ -172,20 +169,13 @@ void vidCb(const sensor_msgs::ImageConstPtr img_left, const sensor_msgs::ImageCo
 		setting_fullResetRequested=false;
 	}
 
-	printf("cols: %d, rows: %d\n", (int)cv_ptr_left->image.cols, (int)cv_ptr_left->image.rows);
-	// MinimalImageB minImg_left((1232, 374,(unsigned char*)cv_ptr_left->image.data);
-	// MinimalImageB minImg_right(1232, 374,(unsigned char*)cv_ptr_right->image.data);
 	MinimalImageB minImg_left((int)cv_ptr_left->image.cols, (int)cv_ptr_left->image.rows,(unsigned char*)cv_ptr_left->image.data);
 	MinimalImageB minImg_right((int)cv_ptr_right->image.cols, (int)cv_ptr_right->image.rows,(unsigned char*)cv_ptr_right->image.data);
 	ImageAndExposure* undistImg_left = undistorter->undistort<unsigned char>(&minImg_left/* , 1,0, 1.0f */);
 	ImageAndExposure* undistImg_right = undistorter->undistort<unsigned char>(&minImg_right/* , 1,0, 1.0f */);
-        // MinimalImageB undist_left((int)cv_ptr_left->image.cols, (int)cv_ptr_left->image.rows, (unsigned char*)undistImg_left->image); 
-		// int cropped_w = 1232; int cropped_h = 374;
         int w = undistImg_left->w;
         int h = undistImg_left->h;
-        printf("w: %d, h: %d\n", w, h);
         MinimalImageB3* internalVideoImg = new MinimalImageB3(w, h);
-        // MinimalImageB3* internalVideoImg_Right = new MinimalImageB3(w,h);
         for (int i = 0; i < w; ++i) {
           for (int j = 0; j < h; ++j) {
             // internalVideoImg->data[i * h + j][0] = internalVideoImg->data[i * h + j][1] =
@@ -249,7 +239,7 @@ int main( int argc, char** argv )
 
     undistorter = Undistort::getUndistorterForFile(calib, gammaFile, vignetteFile);
 
-	printf("gloabl calib size: %d, %d\n",(int)undistorter->getSize()[0], (int)undistorter->getSize()[1]);
+	printf("global calib size: %d, %d\n",(int)undistorter->getSize()[0], (int)undistorter->getSize()[1]);
     setGlobalCalib(
             (int)undistorter->getSize()[0],
             (int)undistorter->getSize()[1],
@@ -266,8 +256,6 @@ int main( int argc, char** argv )
 	    		 (int)undistorter->getSize()[1]));
 
 
-    if(useSampleOutput)
-        fullSystem->outputWrapper.push_back(new IOWrap::SampleOutputWrapper());
 
 
     if(undistorter->photometricUndist != 0) {
@@ -290,6 +278,8 @@ int main( int argc, char** argv )
 	approximate_sync.reset(new ApproximateSync(ApproximatePolicy(10 /* queue_size */), left_sub, right_sub));
 	approximate_sync->registerCallback(boost::bind(vidCb, _1, _2));
 
+    if(useSampleOutput)
+        fullSystem->outputWrapper.push_back(new IOWrap::ROSOutputWrapper(nh));
 	// ros::Subscriber imgSub = nh.subscribe("image", 1, &vidCb);
 
 	ros::spin();
