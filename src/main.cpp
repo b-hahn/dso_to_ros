@@ -144,18 +144,17 @@ int frameID = 0;
 
 void vidCb(const sensor_msgs::ImageConstPtr img_left, const sensor_msgs::ImageConstPtr img_right)
 {
-	ROS_WARN("Callback begin...");
 	cv_bridge::CvImagePtr cv_ptr_left = cv_bridge::toCvCopy(img_left, sensor_msgs::image_encodings::MONO8);
 	cv_bridge::CvImagePtr cv_ptr_right = cv_bridge::toCvCopy(img_right, sensor_msgs::image_encodings::MONO8);
-	cv::Rect ROI(0, 0, 1242, 375);  // TODO: remove if unnecessary
-	cv_ptr_left->image = cv_ptr_left->image(ROI);
-	cv_ptr_right->image = cv_ptr_right->image(ROI);
+	// cv::Rect ROI(0, 0, 1242, 375);  // TODO: remove if unnecessary
+	// cv_ptr_left->image = cv_ptr_left->image(ROI);
+	// cv_ptr_right->image = cv_ptr_right->image(ROI);
 	assert(cv_ptr_left->image.type() == CV_8U);
 	assert(cv_ptr_left->image.channels() == 1);
 	assert(cv_ptr_right->image.type() == CV_8U);
 	assert(cv_ptr_right->image.channels() == 1);
 
-	printf("setting_fullResetRequested: %d\n", setting_fullResetRequested);
+	// printf("setting_fullResetRequested: %d\n", setting_fullResetRequested);
 	if(setting_fullResetRequested)
 	{
 		std::vector<IOWrap::Output3DWrapper*> wraps = fullSystem->outputWrapper;
@@ -172,25 +171,26 @@ void vidCb(const sensor_msgs::ImageConstPtr img_left, const sensor_msgs::ImageCo
 	MinimalImageB minImg_left((int)cv_ptr_left->image.cols, (int)cv_ptr_left->image.rows,(unsigned char*)cv_ptr_left->image.data);
 	MinimalImageB minImg_right((int)cv_ptr_right->image.cols, (int)cv_ptr_right->image.rows,(unsigned char*)cv_ptr_right->image.data);
 	ImageAndExposure* undistImg_left = undistorter->undistort<unsigned char>(&minImg_left/* , 1,0, 1.0f */);
+	undistImg_left->timestamp = img_left->header.stamp.toSec();
 	ImageAndExposure* undistImg_right = undistorter->undistort<unsigned char>(&minImg_right/* , 1,0, 1.0f */);
-        int w = undistImg_left->w;
-        int h = undistImg_left->h;
-        MinimalImageB3* internalVideoImg = new MinimalImageB3(w, h);
-        for (int i = 0; i < w; ++i) {
-          for (int j = 0; j < h; ++j) {
-            // internalVideoImg->data[i * h + j][0] = internalVideoImg->data[i * h + j][1] =
-            //     internalVideoImg->data[i * h + j][2] =
-            //         undistImg_left->image[i * h + j] * 0.8 > 255.0f ? 255.0 : undistImg_left->image[i * h + j] * 0.8;
-            internalVideoImg->data[i * h + j][0] = internalVideoImg->data[i * h + j][1] =
-                internalVideoImg->data[i * h + j][2] =
-                    undistImg_right->image[i * h + j] * 0.8 > 255.0f ? 255.0 : undistImg_right->image[i * h + j] * 0.8;
-          }
-        }
-        IOWrap::displayImage("right cam", internalVideoImg);
-	IOWrap::waitKey(10);
+	undistImg_right->timestamp = img_left->header.stamp.toSec();
+	// int w = undistImg_left->w;
+	// int h = undistImg_left->h;
+	// MinimalImageB3* internalVideoImg = new MinimalImageB3(w, h);
+	// for (int i = 0; i < w; ++i) {
+	// 	for (int j = 0; j < h; ++j) {
+	// 	// internalVideoImg->data[i * h + j][0] = internalVideoImg->data[i * h + j][1] =
+	// 	//     internalVideoImg->data[i * h + j][2] =
+	// 	//         undistImg_left->image[i * h + j] * 0.8 > 255.0f ? 255.0 : undistImg_left->image[i * h + j] * 0.8;
+	// 	internalVideoImg->data[i * h + j][0] = internalVideoImg->data[i * h + j][1] =
+	// 		internalVideoImg->data[i * h + j][2] =
+	// 		undistImg_right->image[i * h + j] * 0.8 > 255.0f ? 255.0 : undistImg_right->image[i * h + j] * 0.8;
+	// 	}
+	// }
+	// IOWrap::displayImage("right cam", internalVideoImg);
+	// IOWrap::waitKey(10);
 
-
-	// float* left = undistImg_left->image;
+        // float* left = undistImg_left->image;
 	// cv::Mat cvimg_left((int)cv_ptr_left->image.rows, (int)cv_ptr_left->image.cols, CV_8U, (unsigned char*)left);
 	// cv::imshow("left image", cvimg_left);
 	// cv::imwrite("left_cam.png", cvimg_left);
@@ -200,7 +200,6 @@ void vidCb(const sensor_msgs::ImageConstPtr img_left, const sensor_msgs::ImageCo
 	frameID++;
 	delete undistImg_left;
 	delete undistImg_right;
-	ROS_WARN("Callback end!\n");
 
 }
 
