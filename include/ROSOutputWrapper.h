@@ -136,20 +136,26 @@ public:
                   // << " and p->idepth = " << p->idepth << std::endl;
       }
 
-      // for (PointHessian* p : f->pointHessiansOut) {
-      //   Vec4 pt_cam;
-      //   // TODO: verify that idepth == inverse depth
-      //   pt_cam[0] = (p->u - cx) / fx / p->idepth;
-      //   pt_cam[1] = (p->v - cy) / fy / p->idepth;
-      //   pt_cam[2] = 1 / p->idepth;
-      //   pt_cam[3] = 1;
-      //   pt_cam = f->shell->camToWorld.matrix() * pt_cam;
-      //   pcl::PointXYZRGB pt_w(255, 255, 255);
-      //   pt_w.x = pt_world[0];
-      //   pt_w.y = pt_world[1];
-      //   pt_w.z = pt_world[2];
-      //   cloud.push_back(pt_w);
-      // }
+      for (PointHessian* p : f->pointHessiansOut) {
+        Vec4 pt_cam;
+        // TODO: verify that idepth == inverse depth
+        float depth = 1.0f / p->idepth;
+        auto const x = (p->u * fxi + cxi) * depth;
+        auto const y = (p->v * fyi + cyi) * depth;
+        auto const z = depth * (1 + 2*fxi);
+        
+        pt_cam[0] = x;
+        pt_cam[1] = y;
+        pt_cam[2] = z;
+        pt_cam[3] = 1.f;
+        Vec4 pt_world = T_newestF_currF * pt_cam * 20.6128;
+
+        pcl::PointXYZRGB pt_w(255, 255, 255);
+        pt_w.x = pt_world[0];
+        pt_w.y = pt_world[1];
+        pt_w.z = pt_world[2];
+        cloud.push_back(pt_w);
+      }
 
       for (ImmaturePoint* p : f->immaturePoints) {
         Vec4 pt_cam;
@@ -163,16 +169,6 @@ public:
         pt_cam[1] = y;
         pt_cam[2] = z;
         pt_cam[3] = 1.f;
-        // std::cout << "pt_cam: " << pt_cam[0] << " " << pt_cam[1] << " " << pt_cam[2]
-                  // << " " << pt_cam[3] << " coming from " << p->u << " " << p->v << " and p->idepth = " << p->idepth << std::endl;
-        // pt_cam[0] = (p->u - cx) / fx / p->idepth;
-        // pt_cam[1] = (p->v - cy) / fy / p->idepth;
-        // pt_cam[2] = 1 / p->idepth;
-        // pt_cam[3] = 1;
-        // pt_cam = f->shell->camToWorld.matrix() * pt_cam;
-        // if (num_pt_marg % 100 == 0) {
-        //   std::cout << "f->shell->camToWorld.matrix3x4(): " << f->shell->camToWorld.matrix3x4() << std::endl;
-        // }
         Vec4 pt_world = T_newestF_currF * pt_cam * 20.6128;
 
         pcl::PointXYZRGB pt_w(255, 255, 255);
