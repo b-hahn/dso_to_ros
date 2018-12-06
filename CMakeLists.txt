@@ -5,10 +5,12 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   roscpp
   sensor_msgs
+  geometry_msgs
   cv_bridge
   image_transport
   message_filters
   pcl_catkin
+  libpointmatcher_ros
 )
 
 set(DSO_PATH $ENV{DSO_PATH})
@@ -32,10 +34,12 @@ catkin_package(
     geometry_msgs
     roscpp
     sensor_msgs
+    geometry_msgs
     cv_bridge
     image_transport
     message_filters
     pcl_catkin
+    libpointmatcher_ros
 )
 
 ###########
