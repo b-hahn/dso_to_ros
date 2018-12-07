@@ -50,15 +50,15 @@ public:
       //   continue;
       // }
       Mat44 T_newestF_currF = T_newestF_world * f->shell->camToWorld.matrix();
-      ROS_WARN("distance from frame %d to current frame %d: (%f, %f, %f) --> norm: %f and %f and %f\n",
-               f->frameID,
-               frames.back()->frameID,
-               T_newestF_currF(0, 3),
-               T_newestF_currF(1, 3),
-               T_newestF_currF(2, 3),
-               T_newestF_currF.block<3, 1>(0, 3).norm(),
-               T_newestF_world.block<3, 1>(0, 3).norm(),
-               f->shell->camToWorld.matrix().block<3, 1>(0, 3).norm());
+      // ROS_WARN("distance from frame %d to current frame %d: (%f, %f, %f) --> norm: %f and %f and %f\n",
+      //          f->frameID,
+      //          frames.back()->frameID,
+      //          T_newestF_currF(0, 3),
+      //          T_newestF_currF(1, 3),
+      //          T_newestF_currF(2, 3),
+      //          T_newestF_currF.block<3, 1>(0, 3).norm(),
+      //          T_newestF_world.block<3, 1>(0, 3).norm(),
+      //          f->shell->camToWorld.matrix().block<3, 1>(0, 3).norm());
 
       float cx = HCalib->cxl() /* * SCALE_C */;
       float cy = HCalib->cyl() /* * SCALE_C */;
@@ -207,11 +207,11 @@ public:
 
   virtual void publishCamPose(FrameShell* frame, CalibHessian* HCalib) override
   {
-    printf("OUT: Current Frame %d (time %f, internal ID %d). CameraToWorld:\n",
-           frame->incoming_id,
-           frame->timestamp,
-           frame->id);
-    std::cout << frame->camToWorld.matrix3x4() << "\n";
+    // printf("OUT: Current Frame %d (time %f, internal ID %d). CameraToWorld:\n",
+    //        frame->incoming_id,
+    //        frame->timestamp,
+    //        frame->id);
+    // std::cout << frame->camToWorld.matrix3x4() << "\n";
 
     // permutation matrix to get world coord system (DSO in cam coord system)
     Eigen::Matrix<double,4, 4> T_world_dso;

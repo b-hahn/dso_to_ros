@@ -132,6 +132,20 @@ void parseArgument(char* arg)
 		return;
 	}
 
+	if(1==sscanf(arg,"num_active_pts=%d",&option))
+	{
+		setting_desiredPointDensity = option;
+		printf("Setting number of active points to %f!\n", setting_desiredPointDensity);
+		return;
+	}
+
+	if(1==sscanf(arg,"num_immature_pts=%d",&option))
+	{
+		setting_desiredImmatureDensity = option;
+		printf("Setting number of immature points to %f!\n", setting_desiredImmatureDensity);
+		return;
+	}
+
 	printf("could not parse argument \"%s\"!!\n", arg);
 }
 
@@ -220,7 +234,7 @@ int main( int argc, char** argv )
 
 
 	setting_desiredImmatureDensity = 1000;
-	setting_desiredPointDensity = 1200;
+	setting_desiredPointDensity = 2000;
 	setting_minFrames = 5;
 	setting_maxFrames = 7;
 	setting_maxOptIterations=4;
