@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<launch>
+  
+  <arg name="respawn_value" default="false" /> <!-- boolean: true, false -->
+  
+  <!-- ROS parameters -->
+  <rosparam>use_sim_time: true</rosparam>
+  <arg name="enable_gdb" default="false"/>
+  <arg name="launch_prefix" value="xterm -e gdb --args" if="$(arg enable_gdb)"/>
+  <arg name="launch_prefix" value="" unless="$(arg enable_gdb)"/>
+
+  <!-- dso_to_ros node -->
+  <node name="dso_to_ros" pkg="dso_to_ros" type="dso_live" output="screen" respawn="false" launch-prefix="$(arg launch_prefix)" args="mode=1 preset=0 sampleoutput=1 quiet=0 nogui=1 calib=/home/ben/developer/kitti_rosbag/2011_10_03/camera_ros.txt">
+    <param name="image" value="cam2/image_raw"/>
+    <remap from="pointcloud" to="velodyne_points"/>
+  </node>
+	
+</launch>

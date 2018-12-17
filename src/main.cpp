@@ -49,6 +49,7 @@
 #include <message_filters/sync_policies/approximate_time.h>
 #include "cv_bridge/cv_bridge.h"
 #include <opencv/cv.h>
+#include <opencv2/core/eigen.hpp>
 
 
 std::string calib = "";
@@ -188,29 +189,45 @@ void vidCb(const sensor_msgs::ImageConstPtr img_left, const sensor_msgs::ImageCo
 	undistImg_left->timestamp = img_left->header.stamp.toSec();
 	ImageAndExposure* undistImg_right = undistorter->undistort<unsigned char>(&minImg_right/* , 1,0, 1.0f */);
 	undistImg_right->timestamp = img_left->header.stamp.toSec();
-	// int w = undistImg_left->w;
-	// int h = undistImg_left->h;
-	// MinimalImageB3* internalVideoImg = new MinimalImageB3(w, h);
-	// for (int i = 0; i < w; ++i) {
-	// 	for (int j = 0; j < h; ++j) {
-	// 	// internalVideoImg->data[i * h + j][0] = internalVideoImg->data[i * h + j][1] =
-	// 	//     internalVideoImg->data[i * h + j][2] =
-	// 	//         undistImg_left->image[i * h + j] * 0.8 > 255.0f ? 255.0 : undistImg_left->image[i * h + j] * 0.8;
-	// 	internalVideoImg->data[i * h + j][0] = internalVideoImg->data[i * h + j][1] =
-	// 		internalVideoImg->data[i * h + j][2] =
-	// 		undistImg_right->image[i * h + j] * 0.8 > 255.0f ? 255.0 : undistImg_right->image[i * h + j] * 0.8;
-	// 	}
+
+	cv_bridge::CvImagePtr cv_ptr_left_color = cv_bridge::toCvCopy(img_left, sensor_msgs::image_encodings::RGB8);
+	ROS_INFO("cv_ptr_left_color->image.type(): %d",cv_ptr_left_color->image.type());
+	assert(cv_ptr_left_color->image.channels() == 3);
+	assert(cv_ptr_left_color->image.type() == CV_8UC3);
+	std::cout << "isContinuous: " << std::to_string(cv_ptr_left_color->image.isContinuous()) << std::endl;
+
+	// TODO: use fixed size matrices?
+	// Eigen::Matrix<uint8_t, Eigen::Dynamic,Eigen::Dynamic> image_color;
+	// cv::cv2eigen(cv_ptr_left_color->image, image_color);
+	// std::cout << "2" << std::endl;
+	std::vector<uint8_t> image_color;
+	std::shared_ptr<std::vector<uint8_t>> image_color_ptr;
+	image_color.assign(cv_ptr_left_color->image.datastart, cv_ptr_left_color->image.dataend);
+	image_color_ptr = std::make_shared<std::vector<uint8_t>>(image_color);
+	// std::cout << "3" << std::endl;
+	std::cout << "length of image_color vector: " << image_color.size() << std::endl;
+
+	// std::cout << "First nine values in cv_ptr_left_color: ";
+	// std::cout << std::endl;
+	// for (int i = 0; i < 100; ++i) {
+	// 	std::cout << std::to_string( cv_ptr_left_color->image.at<uint8_t>(i)) << ", ";
 	// }
-	// IOWrap::displayImage("right cam", internalVideoImg);
-	// IOWrap::waitKey(10);
+	// std::cout << std::endl;
 
-        // float* left = undistImg_left->image;
-	// cv::Mat cvimg_left((int)cv_ptr_left->image.rows, (int)cv_ptr_left->image.cols, CV_8U, (unsigned char*)left);
-	// cv::imshow("left image", cvimg_left);
-	// cv::imwrite("left_cam.png", cvimg_left);
-	// cv::waitkey(0);
+	// std::cout << "First nine values in image_color: ";
+	// std::cout << std::endl;
+	// for (int i = 0; i < 100; ++i) {
+	// 	std::cout << std::to_string(image_color.at(i)) << ", ";
+	// }
+	// std::cout << std::endl;
 
-	fullSystem->addActiveFrame(undistImg_left, undistImg_right, frameID);
+	// std::shared_ptr<Eigen::Matrix<uint8_t, Eigen::Dynamic, Eigen::Dynamic>> image_color_ptr = std::make_shared<Eigen::Matrix<uint8_t, Eigen::Dynamic, Eigen::Dynamic>>(image_color);
+	// std::shared_ptr<Eigen::Matrix<uint8_t, Eigen::Dynamic, Eigen::Dynamic>> image_color_ptr = 
+	// 	std::allocate_shared<Eigen::Matrix<uint8_t, Eigen::Dynamic, Eigen::Dynamic>, Eigen::aligned_allocator<Eigen::Matrix<uint8_t, Eigen::Dynamic, Eigen::Dynamic>>>(image_color);
+
+
+	fullSystem->addActiveFrame(undistImg_left, undistImg_right, frameID, image_color_ptr);
+	std::cout << "Added active frame!" << std::endl;
 	frameID++;
 	delete undistImg_left;
 	delete undistImg_right;
