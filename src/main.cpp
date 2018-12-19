@@ -243,6 +243,8 @@ int main( int argc, char** argv )
 	ros::init(argc, argv, "dso_live");
 
 
+	setting_desiredImmatureDensity = 1000;
+	setting_desiredPointDensity = 2000;
 
 	for(int i=1; i<argc;i++) {
 		printf("reading arg %s\n", argv[i]);
@@ -250,8 +252,6 @@ int main( int argc, char** argv )
 	}
 
 
-	setting_desiredImmatureDensity = 1000;
-	setting_desiredPointDensity = 2000;
 	setting_minFrames = 5;
 	setting_maxFrames = 7;
 	setting_maxOptIterations=4;

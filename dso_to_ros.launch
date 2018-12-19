@@ -9,9 +9,11 @@
   <arg name="enable_gdb" default="false"/>
   <arg name="launch_prefix" value="xterm -e gdb --args" if="$(arg enable_gdb)"/>
   <arg name="launch_prefix" value="" unless="$(arg enable_gdb)"/>
+  <arg name="num_active_pts" value="10000"/>
+  <arg name="num_immature_pts" value="5000"/>
 
   <!-- dso_to_ros node -->
-  <node name="dso_to_ros" pkg="dso_to_ros" type="dso_live" output="screen" respawn="false" launch-prefix="$(arg launch_prefix)" args="mode=1 preset=0 sampleoutput=1 quiet=0 nogui=1 calib=/home/ben/developer/kitti_rosbag/2011_10_03/camera_ros.txt">
+  <node name="dso_to_ros" pkg="dso_to_ros" type="dso_live" output="screen" respawn="false" launch-prefix="$(arg launch_prefix)" args="mode=1 preset=0 sampleoutput=1 quiet=1 nogui=1 num_active_pts=$(arg num_active_pts) num_immature_pts=$(arg num_immature_pts) calib=/home/ben/developer/kitti_rosbag/2011_10_03/camera_ros.txt">
     <param name="image" value="cam2/image_raw"/>
     <remap from="pointcloud" to="velodyne_points"/>
   </node>
