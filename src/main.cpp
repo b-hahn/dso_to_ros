@@ -194,38 +194,42 @@ void vidCb(const sensor_msgs::ImageConstPtr img_left, const sensor_msgs::ImageCo
 	ROS_INFO("cv_ptr_left_color->image.type(): %d",cv_ptr_left_color->image.type());
 	assert(cv_ptr_left_color->image.channels() == 3);
 	assert(cv_ptr_left_color->image.type() == CV_8UC3);
-	std::cout << "isContinuous: " << std::to_string(cv_ptr_left_color->image.isContinuous()) << std::endl;
+	cv::Rect crop_region(0, 0, 1232, 368);
+	cv_ptr_left_color->image = cv_ptr_left_color->image(crop_region).clone();  // need clone() to get continuous cv::Mat memory layout
 
-	// TODO: use fixed size matrices?
-	// Eigen::Matrix<uint8_t, Eigen::Dynamic,Eigen::Dynamic> image_color;
-	// cv::cv2eigen(cv_ptr_left_color->image, image_color);
-	// std::cout << "2" << std::endl;
+	std::string red = "\033[0;31;1m";
+	std::string reset = "\033[0m"; 
+
 	std::vector<uint8_t> image_color;
-	std::shared_ptr<std::vector<uint8_t>> image_color_ptr;
-	image_color.assign(cv_ptr_left_color->image.datastart, cv_ptr_left_color->image.dataend);
-	image_color_ptr = std::make_shared<std::vector<uint8_t>>(image_color);
-	// std::cout << "3" << std::endl;
-	std::cout << "length of image_color vector: " << image_color.size() << std::endl;
+	std::shared_ptr<std::vector<uint8_t>> image_color_ptr = nullptr;
+	if (cv_ptr_left_color->image.isContinuous()) {
+		// cv::rectangle(cv_ptr_left_color->image, cv::Point(0,0), cv::Point(300, 300), cv::Scalar(0, 0, 255), cv::FILLED);
+		image_color.assign(cv_ptr_left_color->image.datastart, cv_ptr_left_color->image.dataend);
+		// cv::imwrite("red_image.png", cv_ptr_left_color->image);
+		image_color_ptr = std::make_shared<std::vector<uint8_t>>(image_color);
+		// std::cout << "3" << std::endl;
+		std::cout << "length of image_color vector: " << image_color_ptr->size() << std::endl;
 
-	// std::cout << "First nine values in cv_ptr_left_color: ";
-	// std::cout << std::endl;
-	// for (int i = 0; i < 100; ++i) {
-	// 	std::cout << std::to_string( cv_ptr_left_color->image.at<uint8_t>(i)) << ", ";
-	// }
-	// std::cout << std::endl;
+		// std::cout << "First nine values in cv_ptr_left_color: ";
+		// std::cout << std::endl;
+		// for (int i = 0; i < 100; ++i) {
+		// 	std::cout << std::to_string( cv_ptr_left_color->image.at<uint8_t>(i)) << ", ";
+		// }
+		// std::cout << std::endl;
 
-	// std::cout << "First nine values in image_color: ";
-	// std::cout << std::endl;
-	// for (int i = 0; i < 100; ++i) {
-	// 	std::cout << std::to_string(image_color.at(i)) << ", ";
-	// }
-	// std::cout << std::endl;
+		// std::cout << "First nine values in image_color: ";
+		// std::cout << std::endl;
+		// for (int i = 0; i < 100; ++i) {
+		// 	std::cout << std::to_string(image_color.at(i)) << ", ";
+		// }
+		// std::cout << std::endl;
 
-	// std::shared_ptr<Eigen::Matrix<uint8_t, Eigen::Dynamic, Eigen::Dynamic>> image_color_ptr = std::make_shared<Eigen::Matrix<uint8_t, Eigen::Dynamic, Eigen::Dynamic>>(image_color);
-	// std::shared_ptr<Eigen::Matrix<uint8_t, Eigen::Dynamic, Eigen::Dynamic>> image_color_ptr = 
-	// 	std::allocate_shared<Eigen::Matrix<uint8_t, Eigen::Dynamic, Eigen::Dynamic>, Eigen::aligned_allocator<Eigen::Matrix<uint8_t, Eigen::Dynamic, Eigen::Dynamic>>>(image_color);
-
-
+		// std::shared_ptr<Eigen::Matrix<uint8_t, Eigen::Dynamic, Eigen::Dynamic>> image_color_ptr = std::make_shared<Eigen::Matrix<uint8_t, Eigen::Dynamic, Eigen::Dynamic>>(image_color);
+		// std::shared_ptr<Eigen::Matrix<uint8_t, Eigen::Dynamic, Eigen::Dynamic>> image_color_ptr = 
+		// 	std::allocate_shared<Eigen::Matrix<uint8_t, Eigen::Dynamic, Eigen::Dynamic>, Eigen::aligned_allocator<Eigen::Matrix<uint8_t, Eigen::Dynamic, Eigen::Dynamic>>>(image_color);
+	} else {
+		std::cout << red << "OpenCV image not continuous! Cannot pass color image to DSO..." << reset << std::endl;
+	}
 	fullSystem->addActiveFrame(undistImg_left, undistImg_right, frameID, image_color_ptr);
 	std::cout << "Added active frame!" << std::endl;
 	frameID++;
@@ -259,8 +263,6 @@ int main( int argc, char** argv )
 	setting_logStuff = false;
 	setting_kfGlobalWeight = 1.3;
 
-
-	// printf("MODE WITH CALIBRATION, but without exposure times!\n");
 	setting_photometricCalibration = 0;
 	setting_affineOptModeA = 0;
 	setting_affineOptModeB = 0;

@@ -121,7 +121,8 @@ public:
         pt_cam[3] = 1.f;
         Vec4 pt_world = T_newestF_currF * pt_cam * rescale_factor;
 
-        pcl::PointXYZRGB pt_w(255, 255, 255);
+        pcl::PointXYZRGB pt_w(p->color_rgb[0], p->color_rgb[1], p->color_rgb[2]);
+        // pcl::PointXYZRGB pt_w(255, 255, 255);
         pt_w.x = pt_world[0];
         pt_w.y = pt_world[1];
         pt_w.z = pt_world[2];
