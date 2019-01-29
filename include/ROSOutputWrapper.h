@@ -79,33 +79,34 @@ public:
       // cloud.push_back(pt_w);
       // std::cout << "pt_w: " << pt_w.x << " " << pt_w.y << " " << pt_w.z << std::endl;
 
-      for (PointHessian* p : f->pointHessians) {
-        Vec4 pt_cam;
-        // TODO: verify that idepth == inverse depth
-        float depth = 1.0f / p->idepth;
-        auto const x = (p->u * fxi + cxi) * depth;
-        auto const y = (p->v * fyi + cyi) * depth;
-        auto const z = depth * (1 + 2 * fxi);
+      // for (PointHessian* p : f->pointHessians) {
+      //   Vec4 pt_cam;
+      //   // TODO: verify that idepth == inverse depth
+      //   float depth = 1.0f / p->idepth;
+      //   auto const x = (p->u * fxi + cxi) * depth;
+      //   auto const y = (p->v * fyi + cyi) * depth;
+      //   auto const z = depth * (1 + 2 * fxi);
 
-        pt_cam[0] = x;
-        pt_cam[1] = y;
-        pt_cam[2] = z;
-        pt_cam[3] = 1.f;
-        Vec4 pt_world = T_newestF_currF * pt_cam * rescale_factor;
+      //   pt_cam[0] = x;
+      //   pt_cam[1] = y;
+      //   pt_cam[2] = z;
+      //   pt_cam[3] = 1.f;
+      //   Vec4 pt_world = T_newestF_currF * pt_cam * rescale_factor;
 
-        pcl::PointXYZRGB pt_w(255, 255, 255);
-        pt_w.x = pt_world[0];
-        pt_w.y = pt_world[1];
-        pt_w.z = pt_world[2];
-        cloud.push_back(pt_w);
-        // std::cout << "pt_w: " << pt_w.x << " " << pt_w.y << " " << pt_w.z << " coming from " << p->u << " " << p->v
-        // << " and p->idepth = " << p->idepth << " and color: ";
-        // for (auto c : p->color) {
-        //   std::cout << c << ",";
-        // } 
+      //   pcl::PointXYZRGB pt_w(p->color_rgb[0], p->color_rgb[1], p->color_rgb[2]);
+      //   // pcl::PointXYZRGB pt_w(255, 255, 255);
+      //   pt_w.x = pt_world[0];
+      //   pt_w.y = pt_world[1];
+      //   pt_w.z = pt_world[2];
+      //   cloud.push_back(pt_w);
+      //   // std::cout << "pt_w: " << pt_w.x << " " << pt_w.y << " " << pt_w.z << " coming from " << p->u << " " << p->v
+      //   // << " and p->idepth = " << p->idepth << " and color: ";
+      //   // for (auto c : p->color) {
+      //   //   std::cout << c << ",";
+      //   // } 
 
-        // std::cout << std::endl;
-      }
+      //   // std::cout << std::endl;
+      // }
 
       for (PointHessian* p : f->pointHessiansMarginalized) {
         Vec4 pt_cam;
@@ -122,7 +123,7 @@ public:
         Vec4 pt_world = T_newestF_currF * pt_cam * rescale_factor;
 
         pcl::PointXYZRGB pt_w(p->color_rgb[0], p->color_rgb[1], p->color_rgb[2]);
-        // pcl::PointXYZRGB pt_w(255, 255, 255);
+        // pcl::PointXYZRGB pt_w(13, 244, 77);
         pt_w.x = pt_world[0];
         pt_w.y = pt_world[1];
         pt_w.z = pt_world[2];
@@ -132,57 +133,56 @@ public:
                   // << " and p->idepth = " << p->idepth << std::endl;
       }
 
-      for (PointHessian* p : f->pointHessiansOut) {
-        Vec4 pt_cam;
-        // TODO: verify that idepth == inverse depth
-        float depth = 1.0f / p->idepth;
-        auto const x = (p->u * fxi + cxi) * depth;
-        auto const y = (p->v * fyi + cyi) * depth;
-        auto const z = depth * (1 + 2*fxi);
+      // for (PointHessian* p : f->pointHessiansOut) {
+      //   Vec4 pt_cam;
+      //   // TODO: verify that idepth == inverse depth
+      //   float depth = 1.0f / p->idepth;
+      //   auto const x = (p->u * fxi + cxi) * depth;
+      //   auto const y = (p->v * fyi + cyi) * depth;
+      //   auto const z = depth * (1 + 2*fxi);
         
-        pt_cam[0] = x;
-        pt_cam[1] = y;
-        pt_cam[2] = z;
-        pt_cam[3] = 1.f;
-        Vec4 pt_world = T_newestF_currF * pt_cam * rescale_factor;
+      //   pt_cam[0] = x;
+      //   pt_cam[1] = y;
+      //   pt_cam[2] = z;
+      //   pt_cam[3] = 1.f;
+      //   Vec4 pt_world = T_newestF_currF * pt_cam * rescale_factor;
 
-        pcl::PointXYZRGB pt_w(255, 255, 255);
-        pt_w.x = pt_world[0];
-        pt_w.y = pt_world[1];
-        pt_w.z = pt_world[2];
-        cloud.push_back(pt_w);
-      }
+      //   // pcl::PointXYZRGB pt_w(p->color_rgb[0], p->color_rgb[1], p->color_rgb[2]);
+      //   pcl::PointXYZRGB pt_w(255, 255, 255);
+      //   pt_w.x = pt_world[0];
+      //   pt_w.y = pt_world[1];
+      //   pt_w.z = pt_world[2];
+      //   cloud.push_back(pt_w);
+      // }
 
-      for (ImmaturePoint* p : f->immaturePoints) {
-        Vec4 pt_cam;
-        float idepth = (p->idepth_max + p->idepth_min) * 0.5f;
-        float depth = 1.0f / idepth;
-        auto const x = (p->u * fxi + cxi) * depth;
-        auto const y = (p->v * fyi + cyi) * depth;
-        auto const z = depth * (1 + 2*fxi);
+      // for (ImmaturePoint* p : f->immaturePoints) {
+      //   Vec4 pt_cam;
+      //   float idepth = (p->idepth_max + p->idepth_min) * 0.5f;
+      //   float depth = 1.0f / idepth;
+      //   auto const x = (p->u * fxi + cxi) * depth;
+      //   auto const y = (p->v * fyi + cyi) * depth;
+      //   auto const z = depth * (1 + 2*fxi);
         
-        pt_cam[0] = x;
-        pt_cam[1] = y;
-        pt_cam[2] = z;
-        pt_cam[3] = 1.f;
-        Vec4 pt_world = T_newestF_currF * pt_cam * rescale_factor;
-        std::cout << "before setting pcl point color" << std::endl;
-        // pcl::PointXYZRGB pt_w(p->color_rgb[0], p->color_rgb[1], p->color_rgb[2]);
-        pcl::PointXYZRGB pt_w(255, 255, 255);
-        std::cout << "after setting pcl point color" << std::endl;
-        pt_w.x = pt_world[0];
-        pt_w.y = pt_world[1];
-        pt_w.z = pt_world[2];
-        cloud.push_back(pt_w);
+      //   pt_cam[0] = x;
+      //   pt_cam[1] = y;
+      //   pt_cam[2] = z;
+      //   pt_cam[3] = 1.f;
+      //   Vec4 pt_world = T_newestF_currF * pt_cam * rescale_factor;
+      //   pcl::PointXYZRGB pt_w(p->color_rgb[0], p->color_rgb[1], p->color_rgb[2]);
+      //   // pcl::PointXYZRGB pt_w(255, 255, 255);
+      //   pt_w.x = pt_world[0];
+      //   pt_w.y = pt_world[1];
+      //   pt_w.z = pt_world[2];
+      //   cloud.push_back(pt_w);
 
-        // std::cout << "pt_w: " << pt_w.x << " " << pt_w.y << " " << pt_w.z << " coming from " << p->u << " " << p->v
-        // << " and p->idepth = " << idepth << " and color: ";
-        // for (auto c : p->color_rgb) {
-        //   std::cout << std::to_string(c) << ", ";
-        // }
+      //   // std::cout << "pt_w: " << pt_w.x << " " << pt_w.y << " " << pt_w.z << " coming from " << p->u << " " << p->v
+      //   // << " and p->idepth = " << idepth << " and color: ";
+      //   // for (auto c : p->color_rgb) {
+      //   //   std::cout << std::to_string(c) << ", ";
+      //   // }
 
-        // std::cout << std::endl;
-      }
+      //   // std::cout << std::endl;
+      // }
 
       // TODO: watch out, f->pointHessians is a normal ptr, there may be some dereferencing issues. Might have to make
       // copies instead. for each point, backproject into KF and transform using that KF pose
