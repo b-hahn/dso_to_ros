@@ -191,8 +191,10 @@ public:
         
     ROS_WARN("num marginalized points: %d\n", num_pt_marg);
 
-    // TODO: extract point cloud near current pose. Maybe use KNN library? PCL?
-    // std::string current_pose =
+    // don't publish an empty point cloud message since this can cause issues downstream
+    if (num_pt_marg == 0) {
+      return;
+    }
 
     sensor_msgs::PointCloud2 ros_pointcloud;
     pcl::toROSMsg(cloud, ros_pointcloud);
