@@ -191,7 +191,6 @@ void vidCb(const sensor_msgs::ImageConstPtr img_left, const sensor_msgs::ImageCo
 	undistImg_right->timestamp = img_left->header.stamp.toSec();
 
 	cv_bridge::CvImagePtr cv_ptr_left_color = cv_bridge::toCvCopy(img_left, sensor_msgs::image_encodings::RGB8);
-	ROS_INFO("cv_ptr_left_color->image.type(): %d",cv_ptr_left_color->image.type());
 	assert(cv_ptr_left_color->image.channels() == 3);
 	assert(cv_ptr_left_color->image.type() == CV_8UC3);
 	cv::Rect crop_region(0, 0, 1232, 368);

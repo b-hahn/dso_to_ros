@@ -203,10 +203,8 @@ public:
     // ROS_WARN("pc timestamp: %f\n", ros_pointcloud.header.stamp.toSec());
 
     // get most current frame's timestamp
-    // double timestamp = frames.front()->shell->timestamp;
-    // ROS_WARN("pc timestamp front: %f\n", timestamp);
     double timestamp = frames.back()->shell->timestamp;
-    ROS_WARN("pc timestamp back: %f\n", timestamp);
+    double dpth = frames.back()->pointHessiansMarginalized[0]->idepth;
     ros::Time time(timestamp);
     // ros_pointcloud.header.stamp = ros::Time::now();  // TODO: use time of correct TF
     ros_pointcloud.header.stamp = time;  // TODO: use time of correct TF
