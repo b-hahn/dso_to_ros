@@ -8,6 +8,7 @@
 #include <geometry_msgs/TransformStamped.h>
 #include <tf2_ros/static_transform_broadcaster.h>
 #include <pointmatcher_ros/transform.h>
+#include <segmatch/point_color_semantics.hpp>
 
 
 #include "util/NumType.h"
@@ -29,10 +30,6 @@ public:
     printf("OUT: generated publisher!\n");
   }
 
-  // virtual ~SampleOutputWrapper()
-  // {
-  //     printf("OUT: Destroyed SampleOutputWrapper\n");
-  // }
 
   virtual void publishKeyframes(std::vector<FrameHessian*>& frames, bool final, CalibHessian* HCalib) override
   {
@@ -42,6 +39,7 @@ public:
 
     // TODO: maybe reserve space for cloud here?
     pcl::PointCloud<pcl::PointXYZRGB> cloud;
+    pcl::PointCloud<segmatch::PointColorSemantics> cloud_sem;
     int num_pt_marg = 0;
     Mat44 const T_newestF_world =  frames.back()->shell->camToWorld.matrix().inverse();
 

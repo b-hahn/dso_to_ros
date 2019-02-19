@@ -157,8 +157,13 @@ FullSystem* fullSystem = 0;
 Undistort* undistorter = 0;
 int frameID = 0;
 
-void vidCb(const sensor_msgs::ImageConstPtr img_left, const sensor_msgs::ImageConstPtr img_right)
+void vidCb(const sensor_msgs::ImageConstPtr img_left,
+		   const sensor_msgs::ImageConstPtr img_right,
+		   const sensor_msgs::ImageConstPtr img_semantics)
 {
+	std::string red = "\033[0;31;1m";
+	std::string reset = "\033[0m";
+
 	cv_bridge::CvImagePtr cv_ptr_left = cv_bridge::toCvCopy(img_left, sensor_msgs::image_encodings::MONO8);
 	cv_bridge::CvImagePtr cv_ptr_right = cv_bridge::toCvCopy(img_right, sensor_msgs::image_encodings::MONO8);
 	// cv::Rect ROI(0, 0, 1242, 375);  // TODO: remove if unnecessary
@@ -190,14 +195,12 @@ void vidCb(const sensor_msgs::ImageConstPtr img_left, const sensor_msgs::ImageCo
 	ImageAndExposure* undistImg_right = undistorter->undistort<unsigned char>(&minImg_right/* , 1,0, 1.0f */);
 	undistImg_right->timestamp = img_left->header.stamp.toSec();
 
+	// color image
 	cv_bridge::CvImagePtr cv_ptr_left_color = cv_bridge::toCvCopy(img_left, sensor_msgs::image_encodings::RGB8);
 	assert(cv_ptr_left_color->image.channels() == 3);
 	assert(cv_ptr_left_color->image.type() == CV_8UC3);
 	cv::Rect crop_region(0, 0, 1232, 368);
 	cv_ptr_left_color->image = cv_ptr_left_color->image(crop_region).clone();  // need clone() to get continuous cv::Mat memory layout
-
-	std::string red = "\033[0;31;1m";
-	std::string reset = "\033[0m"; 
 
 	std::vector<uint8_t> image_color;
 	std::shared_ptr<std::vector<uint8_t>> image_color_ptr = nullptr;
@@ -206,30 +209,30 @@ void vidCb(const sensor_msgs::ImageConstPtr img_left, const sensor_msgs::ImageCo
 		image_color.assign(cv_ptr_left_color->image.datastart, cv_ptr_left_color->image.dataend);
 		// cv::imwrite("red_image.png", cv_ptr_left_color->image);
 		image_color_ptr = std::make_shared<std::vector<uint8_t>>(image_color);
-		// std::cout << "3" << std::endl;
 		std::cout << "length of image_color vector: " << image_color_ptr->size() << std::endl;
-
-		// std::cout << "First nine values in cv_ptr_left_color: ";
-		// std::cout << std::endl;
-		// for (int i = 0; i < 100; ++i) {
-		// 	std::cout << std::to_string( cv_ptr_left_color->image.at<uint8_t>(i)) << ", ";
-		// }
-		// std::cout << std::endl;
-
-		// std::cout << "First nine values in image_color: ";
-		// std::cout << std::endl;
-		// for (int i = 0; i < 100; ++i) {
-		// 	std::cout << std::to_string(image_color.at(i)) << ", ";
-		// }
-		// std::cout << std::endl;
-
-		// std::shared_ptr<Eigen::Matrix<uint8_t, Eigen::Dynamic, Eigen::Dynamic>> image_color_ptr = std::make_shared<Eigen::Matrix<uint8_t, Eigen::Dynamic, Eigen::Dynamic>>(image_color);
-		// std::shared_ptr<Eigen::Matrix<uint8_t, Eigen::Dynamic, Eigen::Dynamic>> image_color_ptr = 
-		// 	std::allocate_shared<Eigen::Matrix<uint8_t, Eigen::Dynamic, Eigen::Dynamic>, Eigen::aligned_allocator<Eigen::Matrix<uint8_t, Eigen::Dynamic, Eigen::Dynamic>>>(image_color);
 	} else {
 		std::cout << red << "OpenCV image not continuous! Cannot pass color image to DSO..." << reset << std::endl;
 	}
-	fullSystem->addActiveFrame(undistImg_left, undistImg_right, frameID, image_color_ptr);
+
+	// semantic segmentation
+	cv_bridge::CvImagePtr cv_ptr_semantics = cv_bridge::toCvCopy(img_semantics, sensor_msgs::image_encodings::RGB8);
+	assert(cv_ptr_semantics->image.channels() == 3);
+	assert(cv_ptr_semantics->image.type() == CV_8UC3);
+	cv_ptr_semantics->image = cv_ptr_semantics->image(crop_region).clone();  // need clone() to get continuous cv::Mat memory layout
+
+	std::vector<uint8_t> image_semantics;
+	std::shared_ptr<std::vector<uint8_t>> image_semantics_ptr = nullptr;
+	if (cv_ptr_semantics->image.isContinuous()) {
+		// cv::rectangle(cv_ptr_semantics->image, cv::Point(0,0), cv::Point(300, 300), cv::Scalar(0, 0, 255), cv::FILLED);
+		image_semantics.assign(cv_ptr_semantics->image.datastart, cv_ptr_semantics->image.dataend);
+		// cv::imwrite("red_image.png", cv_ptr_semantics->image);
+		image_semantics_ptr = std::make_shared<std::vector<uint8_t>>(image_semantics);
+		std::cout << "length of image_semantics vector: " << image_semantics_ptr->size() << std::endl;
+	} else {
+		std::cout << red << "OpenCV image not continuous! Cannot pass color image to DSO..." << reset << std::endl;
+	}
+
+	fullSystem->addActiveFrame(undistImg_left, undistImg_right, frameID, image_color_ptr/* , image_semantics_ptr */);
 	std::cout << "Added active frame!" << std::endl;
 	frameID++;
 	delete undistImg_left;
@@ -296,18 +299,21 @@ int main( int argc, char** argv )
 		printf("Not using setGammaFunction!!\n");
 	}
     ros::NodeHandle nh;
-	image_transport::SubscriberFilter left_sub, right_sub;
+	image_transport::SubscriberFilter left_sub, right_sub, semantics_sub;
 	image_transport::ImageTransport it(nh);
 	left_sub.subscribe(it, "cam02/image_raw", 1/* , "raw" */);
 	right_sub.subscribe(it, "cam03/image_raw", 1/* , "raw" */);
+	semantics_sub.subscribe(it, "semantics", 1/* , "raw" */);
 
-	typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image> ApproximatePolicy;
+	typedef message_filters::sync_policies::
+		ApproximateTime<sensor_msgs::Image, sensor_msgs::Image, sensor_msgs::Image>
+		ApproximatePolicy;
 	typedef message_filters::Synchronizer<ApproximatePolicy> ApproximateSync;
 	// typedef message_filters::SimpleFilter<ApproximatePolicy> ApproximateSync;
 	boost::shared_ptr<ApproximateSync> approximate_sync;
 
-	approximate_sync.reset(new ApproximateSync(ApproximatePolicy(10 /* queue_size */), left_sub, right_sub));
-	approximate_sync->registerCallback(boost::bind(vidCb, _1, _2));
+	approximate_sync.reset(new ApproximateSync(ApproximatePolicy(10 /* queue_size */), left_sub, right_sub, semantics_sub));
+	approximate_sync->registerCallback(boost::bind(vidCb, _1, _2, _3));
 
     if(useSampleOutput)
         fullSystem->outputWrapper.push_back(new IOWrap::ROSOutputWrapper(nh));
