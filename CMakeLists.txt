@@ -25,13 +25,11 @@ find_package(OpenCV REQUIRED)
 message("\n\n---- FOUND OpenCV Headers at\n\"${OpenCV_INCLUDE_DIRS}\"")
 message("---- FOUND OpenCV Libs at\n\"${OpenCV_LIBS}\"")
 
-find_package(segmatch REQUIRED)
-message("\n\n---- FOUND segmatch Headers at\n\"${segmatch_INCLUDE_DIRS}\"")
-# message("---- FOUND Pangolin Libs at\n\"${Pangolin_LIBRARIES}\"")
-
 find_package(Eigen3 REQUIRED)
 find_package(Boost COMPONENTS system thread)
 find_library(DSO_LIBRARY dso ${DSO_PATH}/build/lib)
+# TODO: find_package(segmatch) includes entire ROS/src folder along with
+# wrong versions of Eigen - fix that, remove hard-coded path workaround
 
 catkin_package(
   CATKIN_DEPENDS
@@ -62,7 +60,7 @@ include_directories(
   ${Pangolin_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIR}
   ${catkin_INCLUDE_DIRS}
-  ${segmatch_INCLUDE_DIRS}
+  ${PROJECT_SOURCE_DIR}/../segmap/segmatch/include  # TODO: avoid using hardcoded path here
 )
 
 ## Declare a C++ executable

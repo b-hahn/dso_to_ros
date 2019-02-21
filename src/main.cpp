@@ -232,7 +232,7 @@ void vidCb(const sensor_msgs::ImageConstPtr img_left,
 		std::cout << red << "OpenCV image not continuous! Cannot pass color image to DSO..." << reset << std::endl;
 	}
 
-	fullSystem->addActiveFrame(undistImg_left, undistImg_right, frameID, image_color_ptr/* , image_semantics_ptr */);
+	fullSystem->addActiveFrame(undistImg_left, undistImg_right, frameID, image_color_ptr, image_semantics_ptr);
 	std::cout << "Added active frame!" << std::endl;
 	frameID++;
 	delete undistImg_left;

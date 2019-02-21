@@ -38,8 +38,8 @@ public:
     }
 
     // TODO: maybe reserve space for cloud here?
-    pcl::PointCloud<pcl::PointXYZRGB> cloud;
-    pcl::PointCloud<segmatch::PointColorSemantics> cloud_sem;
+    // pcl::PointCloud<pcl::PointXYZRGB> cloud;
+    pcl::PointCloud<segmatch::PointColorSemantics> cloud;
     int num_pt_marg = 0;
     Mat44 const T_newestF_world =  frames.back()->shell->camToWorld.matrix().inverse();
 
@@ -120,7 +120,17 @@ public:
         pt_cam[3] = 1.f;
         Vec4 pt_world = T_newestF_currF * pt_cam * rescale_factor;
 
-        pcl::PointXYZRGB pt_w(p->color_rgb[0], p->color_rgb[1], p->color_rgb[2]);
+        // pcl::PointXYZRGB pt_w(p->color_rgb[0], p->color_rgb[1], p->color_rgb[2]);
+        // TODO: remove debug hack below to display semantic segmentation color labels on points
+        // uint32_t rgb_uint = (((uint32_t)p->semantics_rgb[0] << 16 | (uint32_t)p->semantics_rgb[1] << 8 | (uint32_t)p->semantics_rgb[2]));
+        uint32_t rgb_uint = (((uint32_t)p->color_rgb[0] << 16 | (uint32_t)p->color_rgb[1] << 8 | (uint32_t)p->color_rgb[2]));
+        float rgb = *reinterpret_cast<float*>(&rgb_uint);
+        segmatch::PointColorSemantics pt_w;
+        pt_w.rgb = rgb;
+        pt_w.semantics_r = p->semantics_rgb[0];
+        pt_w.semantics_g = p->semantics_rgb[1];
+        pt_w.semantics_b = p->semantics_rgb[2];
+        // pt_w.semantics_rgb = semantics;
         // pcl::PointXYZRGB pt_w(13, 244, 77);
         pt_w.x = pt_world[0];
         pt_w.y = pt_world[1];
