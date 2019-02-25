@@ -124,13 +124,14 @@ public:
         // TODO: remove debug hack below to display semantic segmentation color labels on points
         // uint32_t rgb_uint = (((uint32_t)p->semantics_rgb[0] << 16 | (uint32_t)p->semantics_rgb[1] << 8 | (uint32_t)p->semantics_rgb[2]));
         uint32_t rgb_uint = (((uint32_t)p->color_rgb[0] << 16 | (uint32_t)p->color_rgb[1] << 8 | (uint32_t)p->color_rgb[2]));
+        // uint32_t rgb_uint = (((uint32_t)44 << 16 | (uint32_t)45 << 8 | (uint32_t)46));
         float rgb = *reinterpret_cast<float*>(&rgb_uint);
         segmatch::PointColorSemantics pt_w;
         pt_w.rgb = rgb;
-        pt_w.semantics_r = p->semantics_rgb[0];
-        pt_w.semantics_g = p->semantics_rgb[1];
-        pt_w.semantics_b = p->semantics_rgb[2];
-        // pt_w.semantics_rgb = semantics;
+
+        // pt_w.semantics_rgb = (((uint32_t)100 << 16 | (uint32_t)170 << 8 | (uint32_t)30));
+        pt_w.semantics_rgb =
+          (((uint32_t)p->semantics_rgb[0] << 16 | (uint32_t)p->semantics_rgb[1] << 8 | (uint32_t)p->semantics_rgb[2]));
         // pcl::PointXYZRGB pt_w(13, 244, 77);
         pt_w.x = pt_world[0];
         pt_w.y = pt_world[1];
