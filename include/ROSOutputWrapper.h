@@ -25,6 +25,7 @@ public:
     printf("OUT: Created ROSOutputWrapper\n");
     pointcloud_info_pub = nh.advertise<std_msgs::String>("pointcloud_info", 1000);
     pointcloud_pub = nh.advertise<pcl::PointCloud<pcl::PointXYZRGB>>("pointcloud", 1000);
+    hue_pointcloud_pub = nh.advertise<pcl::PointCloud<pcl::PointXYZI>>("hue_pointcloud", 1000);
     cam_pose_pub = nh.advertise<tf::tfMessage>("tf", 1000);
     printf("OUT: generated publisher!\n");
   }
@@ -34,6 +35,40 @@ public:
   //     printf("OUT: Destroyed SampleOutputWrapper\n");
   // }
 
+
+  static float rgb_to_hue(uint32_t r, uint32_t g, uint32_t b)
+  {
+    float hue = 0;
+    std::vector<float> rgb;
+    rgb.push_back(r / 255.0f);
+    rgb.push_back(g / 255.0f);
+    rgb.push_back(b / 255.0f);
+
+    uint8_t max_index = std::distance(rgb.begin(), std::max_element(rgb.begin(), rgb.end()));
+    uint8_t min_index = std::distance(rgb.begin(), std::min_element(rgb.begin(), rgb.end()));
+    
+    float diff = (rgb[max_index] - rgb[min_index]);
+    
+    // avoid overflow error
+    if (diff < 0.000001) {
+        return 0;
+    }
+
+    // if red has the max value     
+    if (0 == max_index) {
+        hue = (rgb[1] - rgb[2]) / diff * 60;
+    }       
+    else if (1 == max_index) {
+        hue = (2.0 + (rgb[2] - rgb[0]) / diff) * 60;
+    }
+    else if (2 == max_index) {
+        hue = (4.0 + (rgb[0] - rgb[1]) / diff) * 60;
+    }
+
+    return hue >= 0 ? hue : hue + 360;
+
+  }
+
   virtual void publishKeyframes(std::vector<FrameHessian*>& frames, bool final, CalibHessian* HCalib) override
   {
     if (true == final) {
@@ -42,6 +77,7 @@ public:
 
     // TODO: maybe reserve space for cloud here?
     pcl::PointCloud<pcl::PointXYZRGB> cloud;
+    pcl::PointCloud<pcl::PointXYZI> hue_cloud;
     int num_pt_marg = 0;
     Mat44 const T_newestF_world =  frames.back()->shell->camToWorld.matrix().inverse();
 
@@ -123,12 +159,22 @@ public:
         Vec4 pt_world = T_newestF_currF * pt_cam * rescale_factor;
 
         pcl::PointXYZRGB pt_w(p->color_rgb[0], p->color_rgb[1], p->color_rgb[2]);
+
         // pcl::PointXYZRGB pt_w(13, 244, 77);
         pt_w.x = pt_world[0];
         pt_w.y = pt_world[1];
         pt_w.z = pt_world[2];
         cloud.push_back(pt_w);
         num_pt_marg++;
+
+        float hue = rgb_to_hue(p->color_rgb[0], p->color_rgb[1], p->color_rgb[2]);
+        pcl::PointXYZI pt_hue;
+        pt_hue.x = pt_world[0];
+        pt_hue.y = pt_world[1];
+        pt_hue.z = pt_world[2];
+        pt_hue.intensity = hue;
+        hue_cloud.push_back(pt_hue);
+
         // std::cout << "pt_w: " << pt_w.x << " " << pt_w.y << " " << pt_w.z << " coming from " << p->u << " " << p->v
                   // << " and p->idepth = " << p->idepth << std::endl;
       }
@@ -214,8 +260,15 @@ public:
     msg.data = "Number of accumulated points: " + std::to_string(cloud.size()) + "\n";
 
     ROS_WARN("Number of accumulated points: %lu\n", cloud.size());
+    
+    sensor_msgs::PointCloud2 hue_ros_pointcloud;
+    pcl::toROSMsg(hue_cloud, hue_ros_pointcloud);
+    hue_ros_pointcloud.header.frame_id = "cam02";
+    hue_ros_pointcloud.header.stamp = time;  // TODO: use time of correct TF
+
     pointcloud_info_pub.publish(msg);
     pointcloud_pub.publish(ros_pointcloud);
+    hue_pointcloud_pub.publish(hue_ros_pointcloud);
   }
 
 
@@ -252,6 +305,7 @@ public:
 
 private:
   ros::Publisher pointcloud_pub;
+  ros::Publisher hue_pointcloud_pub;
   ros::Publisher pointcloud_info_pub;
   ros::Publisher cam_pose_pub;
 
