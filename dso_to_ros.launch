@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <launch>
-  
+
   <arg name="respawn_value" default="false" /> <!-- boolean: true, false -->
-  
+
   <!-- ROS parameters -->
   <rosparam>use_sim_time: true</rosparam>
   <arg name="enable_gdb" default="false"/>
